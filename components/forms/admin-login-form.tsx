@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle, LockKeyhole } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -15,7 +15,7 @@ import { loginSchema, type LoginInput } from "@/lib/validation";
 export function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -34,38 +34,34 @@ export function AdminLoginForm() {
 
       <form
         className="space-y-4"
-        onSubmit={handleSubmit((values) => {
+        onSubmit={handleSubmit(async (values) => {
           const callbackUrl = searchParams.get("callbackUrl") || "/admin";
-          startTransition(() => {
-            void (async () => {
-              const result = await signIn("credentials", {
-                email: values.email.trim().toLowerCase(),
-                password: values.password,
-                callbackUrl,
-                redirect: false,
-              });
+          setIsLoading(true);
+          try {
+            const result = await signIn("credentials", {
+              email: values.email.trim().toLowerCase(),
+              password: values.password,
+              callbackUrl,
+              redirect: false,
+            });
 
-              if (!result) {
-                toast.error("Sign in failed. No response was returned.");
-                return;
-              }
+            if (!result || result.error) {
+              toast.error("Invalid email or password.");
+              return;
+            }
 
-              if (result.error) {
-                toast.error("Invalid email or password.");
-                return;
-              }
-
-              toast.success("Signed in successfully.");
-              router.push(result.url ?? callbackUrl);
-              router.refresh();
-            })();
-          });
+            toast.success("Signed in successfully.");
+            router.push(result.url ?? callbackUrl);
+            router.refresh();
+          } finally {
+            setIsLoading(false);
+          }
         })}
       >
         <FormField error={errors.email?.message} id="email" label="Email address" required>
           <Input
             autoComplete="email"
-            disabled={isPending}
+            disabled={isLoading}
             id="email"
             placeholder="admin@example.com"
             type="email"
@@ -76,7 +72,7 @@ export function AdminLoginForm() {
         <FormField error={errors.password?.message} id="password" label="Password" required>
           <Input
             autoComplete="current-password"
-            disabled={isPending}
+            disabled={isLoading}
             id="password"
             placeholder="••••••••"
             type="password"
@@ -86,11 +82,11 @@ export function AdminLoginForm() {
 
         <button
           type="submit"
-          disabled={isPending}
-          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isLoading}
+          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-          {isPending ? "Signing in…" : "Sign in"}
+          {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+          {isLoading ? "Signing in…" : "Sign in"}
         </button>
       </form>
     </div>

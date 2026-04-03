@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState } from "react";
 import { useForm, type UseFormSetError } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -30,7 +30,7 @@ type TrackingUpdateFormProps = { shipment: ShipmentDetail };
 
 export function TrackingUpdateForm({ shipment }: TrackingUpdateFormProps) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, reset, setError, formState: { errors } } = useForm<UpdateTrackingInput>({
     resolver: zodResolver(updateTrackingSchema),
@@ -52,33 +52,34 @@ export function TrackingUpdateForm({ shipment }: TrackingUpdateFormProps) {
 
         <form
           className="space-y-4"
-          onSubmit={handleSubmit((values) => {
-            startTransition(() => {
-              void (async () => {
-                const result = await addTrackingUpdateAction(shipment.id, values);
-                if (!result.success) {
-                  applyFieldErrors(result.fieldErrors, setError);
-                  toast.error(result.error);
-                  return;
-                }
-                reset({ location: values.location, status: values.status, note: "" });
-                toast.success(result.message ?? "Tracking updated.");
-                router.refresh();
-              })();
-            });
+          onSubmit={handleSubmit(async (values) => {
+            setIsLoading(true);
+            try {
+              const result = await addTrackingUpdateAction(shipment.id, values);
+              if (!result.success) {
+                applyFieldErrors(result.fieldErrors, setError);
+                toast.error(result.error);
+                return;
+              }
+              reset({ location: values.location, status: values.status, note: "" });
+              toast.success(result.message ?? "Tracking updated.");
+              router.refresh();
+            } finally {
+              setIsLoading(false);
+            }
           })}
         >
           <div className="grid gap-4 md:grid-cols-2">
             <FormField error={errors.location?.message} id="tracking-location" label="Location" required>
               <Input
-                disabled={isPending}
+                disabled={isLoading}
                 id="tracking-location"
                 placeholder="Transit facility, Frankfurt, Germany"
                 {...register("location")}
               />
             </FormField>
             <FormField error={errors.status?.message} id="tracking-status" label="Status" required>
-              <Select disabled={isPending} id="tracking-status" {...register("status")}>
+              <Select disabled={isLoading} id="tracking-status" {...register("status")}>
                 {SHIPMENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </Select>
             </FormField>
@@ -86,23 +87,17 @@ export function TrackingUpdateForm({ shipment }: TrackingUpdateFormProps) {
 
           <FormField description="Optional" error={errors.note?.message} id="tracking-note" label="Operational note">
             <Textarea
-              disabled={isPending}
+              disabled={isLoading}
               id="tracking-note"
               placeholder="Customs cleared, reassigned to last-mile courier…"
               {...register("note")}
             />
           </FormField>
 
-          <div className="flex items-center justify-end gap-3 pt-1">
-            {isPending ? (
-              <span className="flex items-center gap-2 text-xs text-muted">
-                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                Posting update…
-              </span>
-            ) : null}
-            <Button disabled={isPending} size="md" type="submit">
-              {isPending ? <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-              {isPending ? "Posting…" : "Add tracking update"}
+          <div className="flex justify-end pt-1">
+            <Button disabled={isLoading} size="md" type="submit">
+              {isLoading ? <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+              {isLoading ? "Posting…" : "Add tracking update"}
             </Button>
           </div>
         </form>
