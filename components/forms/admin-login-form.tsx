@@ -8,7 +8,6 @@ import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { Button } from "@/components/shared/button";
 import { FormField } from "@/components/shared/form-field";
 import { Input } from "@/components/shared/input";
 import { loginSchema, type LoginInput } from "@/lib/validation";
@@ -52,12 +51,7 @@ export function AdminLoginForm() {
               }
 
               if (result.error) {
-                if (result.error === "CredentialsSignin") {
-                  toast.error("Invalid admin email or password.");
-                } else {
-                  toast.error("Sign in failed. Check the server and auth configuration.");
-                  console.error("Admin sign-in error:", result.error);
-                }
+                toast.error("Invalid email or password.");
                 return;
               }
 
@@ -69,17 +63,35 @@ export function AdminLoginForm() {
         })}
       >
         <FormField error={errors.email?.message} id="email" label="Email address" required>
-          <Input autoComplete="email" id="email" placeholder="admin@example.com" type="email" {...register("email")} />
+          <Input
+            autoComplete="email"
+            disabled={isPending}
+            id="email"
+            placeholder="admin@example.com"
+            type="email"
+            {...register("email")}
+          />
         </FormField>
 
         <FormField error={errors.password?.message} id="password" label="Password" required>
-          <Input autoComplete="current-password" id="password" placeholder="••••••••" type="password" {...register("password")} />
+          <Input
+            autoComplete="current-password"
+            disabled={isPending}
+            id="password"
+            placeholder="••••••••"
+            type="password"
+            {...register("password")}
+          />
         </FormField>
 
-        <Button className="w-full" size="lg" type="submit">
-          {isPending ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : null}
+        <button
+          type="submit"
+          disabled={isPending}
+          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
           {isPending ? "Signing in…" : "Sign in"}
-        </Button>
+        </button>
       </form>
     </div>
   );

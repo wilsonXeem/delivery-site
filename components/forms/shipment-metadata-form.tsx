@@ -15,37 +15,21 @@ import { updateShipmentAction } from "@/lib/actions/shipment-actions";
 import { updateShipmentSchema, type UpdateShipmentInput } from "@/lib/validation";
 import type { FieldErrors, ShipmentDetail } from "@/types";
 
-function applyFieldErrors(
-  fieldErrors: FieldErrors | undefined,
-  setError: UseFormSetError<UpdateShipmentInput>,
-) {
-  if (!fieldErrors) {
-    return;
-  }
-
-  Object.entries(fieldErrors).forEach(([fieldName, messages]) => {
-    const firstMessage = messages?.[0];
-
-    if (!firstMessage) {
-      return;
-    }
-
-    setError(fieldName as keyof UpdateShipmentInput, {
-      type: "server",
-      message: firstMessage,
-    });
+function applyFieldErrors(fieldErrors: FieldErrors | undefined, setError: UseFormSetError<UpdateShipmentInput>) {
+  if (!fieldErrors) return;
+  Object.entries(fieldErrors).forEach(([field, messages]) => {
+    const msg = messages?.[0];
+    if (msg) setError(field as keyof UpdateShipmentInput, { type: "server", message: msg });
   });
 }
 
-type ShipmentMetadataFormProps = {
-  shipment: ShipmentDetail;
-};
+type ShipmentMetadataFormProps = { shipment: ShipmentDetail };
 
 export function ShipmentMetadataForm({ shipment }: ShipmentMetadataFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<UpdateShipmentInput>({
+  const { register, handleSubmit, setError, formState: { errors } } = useForm<UpdateShipmentInput>({
     resolver: zodResolver(updateShipmentSchema),
     defaultValues: {
       title: shipment.title,
@@ -59,93 +43,68 @@ export function ShipmentMetadataForm({ shipment }: ShipmentMetadataFormProps) {
     },
   });
 
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = form;
-
   return (
-    <Card className="p-6 md:p-8">
-      <div className="space-y-6">
-        <div className="border-b border-line pb-4">
+    <Card className="p-5 md:p-6">
+      <div className="space-y-5">
+        <div className="border-b border-line pb-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand">Shipment Info</p>
-          <h2 className="mt-0.5 text-base font-bold text-foreground">Edit metadata</h2>
+          <h2 className="mt-0.5 text-sm font-bold text-foreground">Edit metadata</h2>
         </div>
 
         <form
-          className="space-y-5"
+          className="space-y-4"
           onSubmit={handleSubmit((values) => {
             startTransition(() => {
               void (async () => {
                 const result = await updateShipmentAction(shipment.id, values);
-
                 if (!result.success) {
                   applyFieldErrors(result.fieldErrors, setError);
                   toast.error(result.error);
                   return;
                 }
-
                 toast.success(result.message ?? "Shipment updated.");
                 router.refresh();
               })();
             });
           })}
         >
-          <div className="grid gap-5 md:grid-cols-2">
-            <FormField error={errors.title?.message} id="metadata-title" label="Package title / description" required>
-              <Input id="metadata-title" {...register("title")} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField error={errors.title?.message} id="metadata-title" label="Package title" required>
+              <Input disabled={isPending} id="metadata-title" {...register("title")} />
             </FormField>
-
-            <FormField
-              description="Optional"
-              error={errors.estimatedDeliveryDate?.message}
-              id="metadata-estimatedDeliveryDate"
-              label="Estimated delivery date"
-            >
-              <Input id="metadata-estimatedDeliveryDate" type="date" {...register("estimatedDeliveryDate")} />
+            <FormField description="Optional" error={errors.estimatedDeliveryDate?.message} id="metadata-edd" label="Estimated delivery date">
+              <Input disabled={isPending} id="metadata-edd" type="date" {...register("estimatedDeliveryDate")} />
             </FormField>
-
             <FormField error={errors.senderName?.message} id="metadata-senderName" label="Sender name" required>
-              <Input id="metadata-senderName" {...register("senderName")} />
+              <Input disabled={isPending} id="metadata-senderName" {...register("senderName")} />
             </FormField>
-
-            <FormField
-              description="Optional"
-              error={errors.senderContact?.message}
-              id="metadata-senderContact"
-              label="Sender phone or email"
-            >
-              <Input id="metadata-senderContact" {...register("senderContact")} />
+            <FormField description="Optional" error={errors.senderContact?.message} id="metadata-senderContact" label="Sender contact">
+              <Input disabled={isPending} id="metadata-senderContact" {...register("senderContact")} />
             </FormField>
-
             <FormField error={errors.receiverName?.message} id="metadata-receiverName" label="Receiver name" required>
-              <Input id="metadata-receiverName" {...register("receiverName")} />
+              <Input disabled={isPending} id="metadata-receiverName" {...register("receiverName")} />
             </FormField>
-
-            <FormField
-              description="Optional"
-              error={errors.receiverContact?.message}
-              id="metadata-receiverContact"
-              label="Receiver phone or email"
-            >
-              <Input id="metadata-receiverContact" {...register("receiverContact")} />
+            <FormField description="Optional" error={errors.receiverContact?.message} id="metadata-receiverContact" label="Receiver contact">
+              <Input disabled={isPending} id="metadata-receiverContact" {...register("receiverContact")} />
             </FormField>
-
             <FormField error={errors.origin?.message} id="metadata-origin" label="Origin" required>
-              <Input id="metadata-origin" {...register("origin")} />
+              <Input disabled={isPending} id="metadata-origin" {...register("origin")} />
             </FormField>
-
             <FormField error={errors.destination?.message} id="metadata-destination" label="Destination" required>
-              <Input id="metadata-destination" {...register("destination")} />
+              <Input disabled={isPending} id="metadata-destination" {...register("destination")} />
             </FormField>
           </div>
 
-          <div className="flex justify-end">
-            <Button type="submit">
-              {isPending ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isPending ? "Saving changes..." : "Save changes"}
+          <div className="flex items-center justify-end gap-3 pt-1">
+            {isPending ? (
+              <span className="flex items-center gap-2 text-xs text-muted">
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                Saving…
+              </span>
+            ) : null}
+            <Button disabled={isPending} size="md" type="submit">
+              {isPending ? <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+              {isPending ? "Saving…" : "Save changes"}
             </Button>
           </div>
         </form>
