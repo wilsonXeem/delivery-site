@@ -47,7 +47,7 @@ export default async function AdminLoginPage() {
       </div>
 
       {/* Right panel — login form */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-background px-6 py-12">
+      <div className="flex flex-1 flex-col items-center justify-center bg-background px-6 py-12 md:py-16">
         <div className="mb-8 lg:hidden">
           <Logo href="/" size="md" />
         </div>

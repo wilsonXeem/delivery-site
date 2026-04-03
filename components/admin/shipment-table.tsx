@@ -24,7 +24,7 @@ export function ShipmentTable({ shipments }: ShipmentTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-[var(--shadow)]">
       <div className="overflow-x-auto">
-        <table className="min-w-full">
+        <table className="min-w-full" style={{ minWidth: "700px" }}>
           <thead>
             <tr className="border-b border-line bg-slate-50/80">
               <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-muted">Shipment</th>

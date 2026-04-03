@@ -78,7 +78,7 @@ export default async function TrackingPage({ params }: TrackPageProps) {
               <span className="tracking-num text-sm text-muted">{shipment.trackingNumber}</span>
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+            <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
               {/* Main info */}
               <div className="space-y-5">
                 {/* Current state */}
